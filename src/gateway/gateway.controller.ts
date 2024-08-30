@@ -1,14 +1,15 @@
-import axios from 'axios';
 import { Request, Response } from 'express';
-import { Controller, All, Req, Res, HttpStatus } from '@nestjs/common';
+import { Controller, All, Req, Res, HttpStatus, Next } from '@nestjs/common';
 import { DiscoveryService } from 'src/discovery/discovery.service';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { NextFunction } from 'http-proxy-middleware/dist/types';
 
 @Controller('gateway')
 export class GatewayController {
   constructor(private readonly discoveryService: DiscoveryService) {}
 
   @All(':port/*')
-  async handleRequest(@Req() req: Request, @Res() res: Response) {
+  async handleRequest(@Req() req: Request, @Res() res: Response, @Next() next: NextFunction) {
     const port = parseInt(req.params.port, 10);
     const service = this.discoveryService.getDiscoveredService(port);
 
@@ -17,14 +18,14 @@ export class GatewayController {
     }
 
     try {
-      const response = await axios({
-        method: req.method,
-        url: `http://localhost:${port}${req.url.replace(`/gateway/${port}`, '')}`,
-        data: req.body,
-        headers: { ...req.headers },
-      });
+       // Create a proxy middleware for the target service
+    const proxy = createProxyMiddleware({
+      target: `http://localhost:${port}`,
+      changeOrigin: true,
+      pathRewrite: (path, req) => path.replace(`/gateway/${port}`, ''),
+    });
 
-      res.status(response.status).json(response.data);
+    proxy(req, res, next);
     } catch (error) {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Error forwarding request' });
     }
