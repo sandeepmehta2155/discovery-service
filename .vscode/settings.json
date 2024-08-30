@@ -1,0 +1,6 @@
+{
+    "files.exclude": {
+      "**/*.test.ts": true,
+      // "**/*.spec.ts": true
+    }
+  }
