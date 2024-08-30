@@ -1,11 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as net from 'net';
 import axios from 'axios';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
-export class DiscoveryService {
+export class DiscoveryService implements OnModuleInit {
   private readonly portRange: number[] = Array.from({ length: 6001 }, (_, i) => i + 3000);
   private discoveredServices: any[] = [];
+
+  async onModuleInit() {
+    console.log('Starting service discovery...');
+    await this.identifyHttpServices();
+  }
+
+  @Cron('0 * * * * *')  // Runs every minute, adjust as needed
+  async periodicScan() {
+    console.log('Performing periodic service discovery...');
+    await this.identifyHttpServices();
+  }
 
   async scanPorts(): Promise<number[]> {
     const openPorts: number[] = [];
