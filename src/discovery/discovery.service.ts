@@ -5,6 +5,7 @@ import axios from 'axios';
 @Injectable()
 export class DiscoveryService {
   private readonly portRange: number[] = Array.from({ length: 6001 }, (_, i) => i + 3000);
+  private discoveredServices: any[] = [];
 
   async scanPorts(): Promise<number[]> {
     const openPorts: number[] = [];
@@ -42,16 +43,22 @@ export class DiscoveryService {
     for (const port of openPorts) {
       try {
         const response = await axios.get(`http://localhost:${port}`);
-        httpServices.push({
+        const service = {
           port,
           status: response.status,
           data: response.data,
-        });
+        };
+        httpServices.push(service);
+        this.discoveredServices.push(service);
       } catch (error) {
         // If the request fails, it's not an HTTP service
       }
     }
 
     return httpServices;
+  }
+
+  getDiscoveredService(port: number): any {
+    return this.discoveredServices.find(service => service.port === port);
   }
 }
